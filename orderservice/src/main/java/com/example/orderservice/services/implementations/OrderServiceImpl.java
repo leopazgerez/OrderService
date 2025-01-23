@@ -2,7 +2,6 @@ package com.example.orderservice.services.implementations;
 
 import com.example.orderservice.dtos.OrderDTO;
 import com.example.orderservice.enums.OrderStatus;
-import com.example.orderservice.exceptions.OrderNotFoundException;
 import com.example.orderservice.mappers.OrderMapper;
 import com.example.orderservice.models.Order;
 import com.example.orderservice.repositories.OrderRepository;
@@ -24,11 +23,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDTO create(OrderDTO orderDTO) throws BadRequestException {
-        Order order = new Order();
+        Order order = orderMapper.dtoToEntity(orderDTO);
+        order.setStatus(OrderStatus.PENDING);
         Order savedOrder;
-        order.setProducts(orderDTO.getProducts());
-        order.setUserId(order.getUserId());
-        order.setStatus(order.getStatus());
         try {
             savedOrder = orderRepository.save(order);
         } catch (Exception e) {

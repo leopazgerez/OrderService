@@ -33,7 +33,7 @@ public class OrderController {
     @Operation(summary = "Retrieve user by ID", description = "Create product.")
     @PostMapping("/create")
         //    agregar @Valid luego de testear
-    ResponseEntity<?> createProduct(@RequestBody @Valid OrderDTO productDTO) throws BadRequestException {
+    ResponseEntity<?> createProduct(@RequestBody OrderDTO productDTO) throws BadRequestException {
         return ResponseEntity.ok(orderService.create(productDTO));
     }
 }

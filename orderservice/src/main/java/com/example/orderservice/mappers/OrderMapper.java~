@@ -20,6 +20,7 @@ public class OrderMapper {
             OrderItemDTO orderItemResult = new OrderItemDTO();
             orderItemResult.setProductId(orderItem.getProductId());
             orderItemResult.setQuantity(orderItem.getQuantity());
+            orderItemResult.setOrderId(orderItem.getId());
             return orderItemResult;
         }).collect(Collectors.toSet());
         result.setUserId(order.getUserId());

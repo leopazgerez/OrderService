@@ -1,9 +1,9 @@
 package com.example.orderservice.models;
 
 import com.example.orderservice.enums.OrderStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-
-import java.util.List;
+import java.util.HashSet;
 
 @Table(name = "Orders")
 @Entity
@@ -12,7 +12,9 @@ public class Order {
     @GeneratedValue
     private Long id;
     private Long userId;
-    private List<OrderItem> products;
+    @JsonManagedReference
+    @OneToMany(mappedBy = "order")
+    private HashSet<OrderItem> products;
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
@@ -36,11 +38,11 @@ public class Order {
         this.status = status;
     }
 
-    public List<OrderItem> getProducts() {
+    public HashSet<OrderItem> getProducts() {
         return products;
     }
 
-    public void setProducts(List<OrderItem> products) {
+    public void setProducts(HashSet<OrderItem> products) {
         this.products = products;
     }
 }

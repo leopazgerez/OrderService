@@ -1,22 +1,25 @@
-package com.example.orderservice.models;
+package com.example.orderservice.dtos;
 
-import jakarta.persistence.*;
 
-@Entity
-public class OrderItem {
-    @Id
-    @GeneratedValue
+import com.example.orderservice.models.Order;
+import com.example.orderservice.models.OrderItem;
+
+public class OrderItemDTO {
     private Long id;
     private Long orderId;
     private Long productId;
     private Integer quantity;
-    @ManyToOne
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
 
-    public OrderItem(){}
+
+    public OrderItemDTO() {
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getOrderId() {
@@ -43,11 +46,11 @@ public class OrderItem {
         this.quantity = quantity;
     }
 
-    public Order getOrder() {
-        return order;
-    }
-
-    public void setOrder(Order order) {
-        this.order = order;
-    }
+//    public Order getOrder() {
+//        return order;
+//    }
+//
+//    public void setOrder(Order order) {
+//        this.order = order;
+//    }
 }

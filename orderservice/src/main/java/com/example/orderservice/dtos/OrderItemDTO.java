@@ -1,5 +1,11 @@
 package com.example.orderservice.dtos;
 
+
+import com.example.orderservice.models.Order;
+import com.example.orderservice.models.OrderItem;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OrderItemDTO {
     private Long id;
     private Long orderId;
@@ -41,4 +47,12 @@ public class OrderItemDTO {
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
     }
+
+//    public Order getOrder() {
+//        return order;
+//    }
+//
+//    public void setOrder(Order order) {
+//        this.order = order;
+//    }
 }

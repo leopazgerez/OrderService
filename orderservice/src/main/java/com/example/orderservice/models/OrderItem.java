@@ -1,5 +1,6 @@
 package com.example.orderservice.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -9,11 +10,14 @@ public class OrderItem {
     private Long id;
     private Long productId;
     private Integer quantity;
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    public OrderItem(){}
+    public OrderItem() {
+    }
+
     public Long getId() {
         return id;
     }
