@@ -12,7 +12,6 @@ import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -55,6 +54,14 @@ public class OrderServiceImpl implements OrderService {
         return userRestTemplate.getForEntity("/userId/{userId}", Boolean.class, id).getStatusCode() == HttpStatus.OK;
     }
 
+    private boolean checkStock(OrderDTO orderDTO) {
+        Set<RequestStockValidationDTO> products = orderDTO.getProducts().stream().map(orderItemDTO -> {
+            RequestStockValidationDTO request = new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity());
+            return request;
+        }).collect(Collectors.toSet());
+        return productRestTemplate.postForEntity("/existStock", products, Boolean.class).getStatusCode() == HttpStatus.OK;
+    }
+
     private void reStock(OrderDTO orderDTO) {
         Set<RequestStockValidationDTO> products = orderDTO.getProducts().stream().map(orderItemDTO -> {
             RequestStockValidationDTO request = new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity());
@@ -63,13 +70,6 @@ public class OrderServiceImpl implements OrderService {
         productRestTemplate.put("/updateStock", products, String.class);
     }
 
-    private boolean checkStock(OrderDTO orderDTO) {
-        Set<RequestStockValidationDTO> products = orderDTO.getProducts().stream().map(orderItemDTO -> {
-            RequestStockValidationDTO request = new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity());
-            return request;
-        }).collect(Collectors.toSet());
-        return productRestTemplate.postForEntity("/existStock", products, Boolean.class).getStatusCode() == HttpStatus.OK;
-    }
 
     @Override
     public List<OrderDTO> getAllOrders() {
