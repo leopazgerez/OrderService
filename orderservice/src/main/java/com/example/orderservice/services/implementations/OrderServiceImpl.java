@@ -1,6 +1,7 @@
 package com.example.orderservice.services.implementations;
 
 import com.example.orderservice.dtos.OrderDTO;
+import com.example.orderservice.dtos.RequestStockValidationDTO;
 import com.example.orderservice.enums.OrderStatus;
 import com.example.orderservice.mappers.OrderMapper;
 import com.example.orderservice.models.Order;
@@ -8,9 +9,12 @@ import com.example.orderservice.repositories.OrderRepository;
 import com.example.orderservice.services.OrderService;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,12 +24,31 @@ public class OrderServiceImpl implements OrderService {
     OrderRepository orderRepository;
     @Autowired
     OrderMapper orderMapper;
+    @Autowired
+    RestTemplate productRestTemplate;
+    @Autowired
+    RestTemplate userRestTemplate;
 
     @Override
     public OrderDTO create(OrderDTO orderDTO) throws BadRequestException {
         Order order = orderMapper.dtoToEntity(orderDTO);
         order.setStatus(OrderStatus.PENDING);
         Order savedOrder;
+        try {
+            if (userRestTemplate.getForEntity("/userId/{userId}", Boolean.class, orderDTO.getUserId()).getStatusCode() == HttpStatus.OK) {
+                order.setUserId(orderDTO.getUserId());
+            }
+            Set<RequestStockValidationDTO> products = orderDTO.getProducts().stream().map(orderItemDTO -> {
+                RequestStockValidationDTO request = new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity());
+                return request;
+            }).collect(Collectors.toSet());
+
+            if (productRestTemplate.postForEntity("/existStock", products, Boolean.class).getStatusCode() == HttpStatus.OK) {
+                System.out.println("HAY STOCK DE TODO");
+            }
+        } catch (Exception e) {
+            System.out.println("Algo salio mal" + e.getMessage());
+        }
         try {
             savedOrder = orderRepository.save(order);
         } catch (Exception e) {
