@@ -45,7 +45,7 @@ public class OrderServiceImpl implements OrderService {
                 return orderMapper.entityToDTO(savedOrder);
             }
         } catch (HttpStatusCodeException e) {
-            throw new ExternalServiceException(e.getStatusCode(), e.getMessage());
+            throw new ExternalServiceException(e.getStatusCode(), "Could not make order: " + e.getResponseBodyAsString());
         }
         throw new BadRequestException("Unable to create order due to invalid data");
     }
@@ -55,25 +55,26 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private boolean checkStock(OrderDTO orderDTO) {
-        Set<RequestStockValidationDTO> products = orderDTO.getProducts().stream().map(orderItemDTO -> {
-            RequestStockValidationDTO request = new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity());
-            return request;
-        }).collect(Collectors.toSet());
+        Set<RequestStockValidationDTO> products = orderDTO.getProducts()
+                .stream()
+                .map(orderItemDTO -> new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity()))
+                .collect(Collectors.toSet());
         return productRestTemplate.postForEntity("/existStock", products, Boolean.class).getStatusCode() == HttpStatus.OK;
     }
 
     private void reStock(OrderDTO orderDTO) {
-        Set<RequestStockValidationDTO> products = orderDTO.getProducts().stream().map(orderItemDTO -> {
-            RequestStockValidationDTO request = new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity());
-            return request;
-        }).collect(Collectors.toSet());
+        Set<RequestStockValidationDTO> products = orderDTO.getProducts()
+                .stream()
+                .map(orderItemDTO -> new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity()))
+                .collect(Collectors.toSet());
         productRestTemplate.put("/updateStock", products, String.class);
     }
 
 
     @Override
     public List<OrderDTO> getAllOrders() {
-        return orderRepository.findAll()
+        return orderRepository
+                .findAll()
                 .stream()
                 .map(orderMapper::entityToDTO)
                 .collect(Collectors.toList());
@@ -81,7 +82,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void update(Long id) throws BadRequestException {
-        Order orderFound = orderRepository.findById(id).orElseThrow();
+        Order orderFound = orderRepository
+                .findById(id)
+                .orElseThrow();
         if (orderFound.getStatus() == OrderStatus.COMPLETED) {
             orderFound.setStatus(OrderStatus.PENDING);
         } else {
