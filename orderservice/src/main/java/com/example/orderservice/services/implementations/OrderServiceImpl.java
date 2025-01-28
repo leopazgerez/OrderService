@@ -23,13 +23,13 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
 
     @Autowired
-    OrderRepository orderRepository;
+    private OrderRepository orderRepository;
     @Autowired
-    OrderMapper orderMapper;
+    private OrderMapper orderMapper;
     @Autowired
-    RestTemplate productRestTemplate;
+    private RestTemplate productRestTemplate;
     @Autowired
-    RestTemplate userRestTemplate;
+    private RestTemplate userRestTemplate;
 
     @Override
     public OrderDTO create(OrderDTO orderDTO) throws ExternalServiceException, BadRequestException {
@@ -40,7 +40,7 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder;
         try {
             if (existUser(order.getUserId()) && checkStock(orderDTO)) {
-                reStock(orderDTO);
+                reStock(orderDTO); // hacer que se reduzca el stock despues de que se confirma la orden. Confirma conlleva verificar que exista el usuario y stock
                 savedOrder = orderRepository.save(order);
                 return orderMapper.entityToDTO(savedOrder);
             }
