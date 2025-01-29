@@ -1,10 +1,14 @@
 package com.example.orderservice.controllers;
 
+import com.example.orderservice.config.RabbitConfig;
 import com.example.orderservice.dtos.OrderDTO;
 import com.example.orderservice.exceptions.ExternalServiceException;
 import com.example.orderservice.services.OrderService;
 import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +20,8 @@ public class OrderController {
 
     @Autowired
     OrderService orderService;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Operation(summary = "Retrieve user by ID", description = "Fetches all products.")
     @GetMapping("/all")

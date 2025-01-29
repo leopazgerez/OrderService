@@ -1,5 +1,6 @@
 package com.example.orderservice.services.implementations;
 
+import com.example.orderservice.Utils.RabbitValues;
 import com.example.orderservice.dtos.OrderDTO;
 import com.example.orderservice.dtos.RequestStockValidationDTO;
 import com.example.orderservice.enums.OrderStatus;
@@ -9,6 +10,8 @@ import com.example.orderservice.models.Order;
 import com.example.orderservice.repositories.OrderRepository;
 import com.example.orderservice.services.OrderService;
 import org.apache.coyote.BadRequestException;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,10 @@ public class OrderServiceImpl implements OrderService {
     private RestTemplate productRestTemplate;
     @Autowired
     private RestTemplate userRestTemplate;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private RabbitValues rabbitValues;
 
     @Override
     public OrderDTO create(OrderDTO orderDTO) throws ExternalServiceException, BadRequestException {
@@ -40,8 +47,8 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder;
         try {
             if (existUser(order.getUserId()) && checkStock(orderDTO)) {
-                reStock(orderDTO); // hacer que se reduzca el stock despues de que se confirma la orden. Confirma conlleva verificar que exista el usuario y stock
                 savedOrder = orderRepository.save(order);
+                rabbitTemplate.convertAndSend(rabbitValues.getExchange(), rabbitValues.getUpdateStockRoutingKey(), orderMapper.entityToDTO(savedOrder));
                 return orderMapper.entityToDTO(savedOrder);
             }
         } catch (HttpStatusCodeException e) {
@@ -59,7 +66,7 @@ public class OrderServiceImpl implements OrderService {
                 .stream()
                 .map(orderItemDTO -> new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity()))
                 .collect(Collectors.toSet());
-        return productRestTemplate.postForEntity("/existStock", products, Boolean.class).getStatusCode() == HttpStatus.OK;
+        return productRestTemplate.postForEntity("/existStock", orderDTO.getProducts(), Boolean.class).getStatusCode() == HttpStatus.OK;
     }
 
     private void reStock(OrderDTO orderDTO) {
@@ -81,6 +88,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @RabbitListener(queues = "#{rabbitValues.updateOrderQueue}")
     public void update(Long id) throws BadRequestException {
         Order orderFound = orderRepository
                 .findById(id)
