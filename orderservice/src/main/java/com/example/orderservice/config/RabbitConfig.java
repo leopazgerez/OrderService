@@ -35,7 +35,6 @@ public class RabbitConfig {
      */
     @Bean
     Queue stockQueue() {
-
         return new Queue(rabbitValues.getUpdateStockQueue(), false);
     }
 

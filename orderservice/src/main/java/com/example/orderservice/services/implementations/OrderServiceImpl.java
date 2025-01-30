@@ -93,14 +93,14 @@ public class OrderServiceImpl implements OrderService {
         Order orderFound = orderRepository
                 .findById(id)
                 .orElseThrow();
-        orderFound.setStatus(OrderStatus.PENDING);
+        orderFound.setStatus(OrderStatus.COMPLETED);
         try {
-            throw new BadRequestException();
-//            orderRepository.save(orderFound);
+            Order orderSaved = orderRepository.save(orderFound);
+            rabbitTemplate.convertAndSend(rabbitValues.getExchange(), rabbitValues.getCreatedOrderRoutingKey(), orderMapper.entityToDTO(orderSaved));
         } catch (Exception e) {
 //            TODO: realizar el restock en caso de que no se pueda realizar actualización.
 //            rabbitTemplate.convertAndSend(rabbitValues.getExchange(), rabbitValues.getUpdateStockRoutingKey(), orderMapper.entityToDTO(orderFound));
-            System.out.println("kjañsldkfañsl" +e.getMessage());
+            System.out.println("kjañsldkfañsl" + e.getMessage());
             throw new BadRequestException(e.getMessage());
         }
     }
