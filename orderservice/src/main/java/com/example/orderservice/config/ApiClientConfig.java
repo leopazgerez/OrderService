@@ -1,4 +1,4 @@
-package com.example.orderservice.conections;
+package com.example.orderservice.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;

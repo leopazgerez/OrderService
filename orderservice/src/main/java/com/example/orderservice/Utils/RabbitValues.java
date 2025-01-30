@@ -11,6 +11,9 @@ public class RabbitValues {
     @Value("${rabbitmq.queue.stock.name}")
     private String updateStockQueue;
 
+    @Value("${rabbitmq.queue.created.order.name}")
+    private String createdOrderQueue;
+
     @Value("${rabbitmq.exchange.name}")
     private String exchange;
 
@@ -19,6 +22,9 @@ public class RabbitValues {
 
     @Value("${rabbitmq.routing.stock.key}")
     private String updateStockRoutingKey;
+
+    @Value("${rabbitmq.routing.created.order.key}")
+    private String createdOrderRoutingKey;
 
     public String getUpdateOrderQueue() {
         return updateOrderQueue;
@@ -38,5 +44,13 @@ public class RabbitValues {
 
     public String getUpdateStockRoutingKey() {
         return updateStockRoutingKey;
+    }
+
+    public String getCreatedOrderQueue() {
+        return createdOrderQueue;
+    }
+
+    public String getCreatedOrderRoutingKey() {
+        return createdOrderRoutingKey;
     }
 }

@@ -24,11 +24,18 @@ public class RabbitConfig {
                 false);
     }
 
+    @Bean
+    Queue createdOrderQueue() {
+        return new Queue(rabbitValues.getCreatedOrderQueue(),
+                false);
+    }
+
     /**
      * Cola de actualizacion de stock
      */
     @Bean
     Queue stockQueue() {
+
         return new Queue(rabbitValues.getUpdateStockQueue(), false);
     }
 
@@ -63,13 +70,21 @@ public class RabbitConfig {
     }
 
     @Bean
+    Binding createdOrderBinding() {
+        return BindingBuilder
+                .bind(createdOrderQueue())
+                .to(exchange())
+                .with(rabbitValues.getCreatedOrderRoutingKey());
+    }
+
+    @Bean
     public MessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
 
     /**
-     * Configuracion del template
+     * Configuración del template
      */
     @Bean
     public AmqpTemplate amqpTemplate(ConnectionFactory connectionFactory) {

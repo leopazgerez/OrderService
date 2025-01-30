@@ -58,7 +58,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private boolean existUser(Long id) {
-        return userRestTemplate.getForEntity("/userId/{userId}", Boolean.class, id).getStatusCode() == HttpStatus.OK;
+        return userRestTemplate.getForEntity("/existUser/{userId}", Boolean.class, id).getStatusCode() == HttpStatus.OK;
     }
 
     private boolean checkStock(OrderDTO orderDTO) {
@@ -93,14 +93,14 @@ public class OrderServiceImpl implements OrderService {
         Order orderFound = orderRepository
                 .findById(id)
                 .orElseThrow();
-        if (orderFound.getStatus() == OrderStatus.COMPLETED) {
-            orderFound.setStatus(OrderStatus.PENDING);
-        } else {
-            orderFound.setStatus(OrderStatus.COMPLETED);
-        }
+        orderFound.setStatus(OrderStatus.PENDING);
         try {
-            orderRepository.save(orderFound);
+            throw new BadRequestException();
+//            orderRepository.save(orderFound);
         } catch (Exception e) {
+//            TODO: realizar el restock en caso de que no se pueda realizar actualización.
+//            rabbitTemplate.convertAndSend(rabbitValues.getExchange(), rabbitValues.getUpdateStockRoutingKey(), orderMapper.entityToDTO(orderFound));
+            System.out.println("kjañsldkfañsl" +e.getMessage());
             throw new BadRequestException(e.getMessage());
         }
     }
