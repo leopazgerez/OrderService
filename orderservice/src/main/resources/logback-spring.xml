@@ -3,7 +3,8 @@
 
     <!-- Configuración para habilitar el acceso al entorno de Spring -->
     <springProperty scope="context" name="LOG_PATH" source="logging.file.path" defaultValue="logs" />
-    <springProperty scope="context" name="LOG_FILE" source="logging.file.name" defaultValue="application.log" />
+    <springProperty scope="context" name="LOG_FILE" source="logging.file.name"
+        defaultValue="application.log" />
 
     <!-- Define el patrón de los logs -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -31,7 +32,10 @@
     </root>
 
     <logger name="com.example.orderservice" level="WARN">
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="FILE" />
     </logger>
 
+    <logger name="com.example.orderservice" level="ERROR">
+        <appender-ref ref="FILE" />
+    </logger>
 </configuration>
