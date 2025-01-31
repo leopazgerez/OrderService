@@ -9,12 +9,16 @@ import com.example.orderservice.mappers.OrderMapper;
 import com.example.orderservice.models.Order;
 import com.example.orderservice.repositories.OrderRepository;
 import com.example.orderservice.services.OrderService;
+import jakarta.transaction.Transactional;
 import org.apache.coyote.BadRequestException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -25,6 +29,7 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
 
+    private static final Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
@@ -39,44 +44,41 @@ public class OrderServiceImpl implements OrderService {
     private RabbitValues rabbitValues;
 
     @Override
+    @Transactional
     public OrderDTO create(OrderDTO orderDTO) throws ExternalServiceException, BadRequestException {
-        Order order = orderMapper.dtoToEntity(orderDTO);
-        order.setStatus(OrderStatus.PENDING);
-        order.getProducts().forEach(orderItem -> orderItem.setOrder(order));
-        new Order();
+        Order orderFromDTO = orderMapper.dtoToEntity(orderDTO);
+        orderFromDTO.setStatus(OrderStatus.PENDING);
+        orderFromDTO.getProducts().forEach(orderItem -> orderItem.setOrder(orderFromDTO));
         Order savedOrder;
         try {
-            if (existUser(order.getUserId()) && checkStock(orderDTO)) {
-                savedOrder = orderRepository.save(order);
+            if (existUserFromService(orderDTO.getUserId()) && checkStockFromService(orderDTO)) {
+                savedOrder = orderRepository.save(orderFromDTO);
                 rabbitTemplate.convertAndSend(rabbitValues.getExchange(), rabbitValues.getUpdateStockRoutingKey(), orderMapper.entityToDTO(savedOrder));
                 return orderMapper.entityToDTO(savedOrder);
             }
         } catch (HttpStatusCodeException e) {
+            log.error(e.getMessage(), e);
             throw new ExternalServiceException(e.getStatusCode(), "Could not make order: " + e.getResponseBodyAsString());
+        } catch (Exception exception) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            log.error(exception.getMessage(), exception);
+            throw exception;
         }
         throw new BadRequestException("Unable to create order due to invalid data");
     }
 
-    private boolean existUser(Long id) {
+
+    private boolean existUserFromService(Long id) {
         return userRestTemplate.getForEntity("/existUser/{userId}", Boolean.class, id).getStatusCode() == HttpStatus.OK;
     }
 
-    private boolean checkStock(OrderDTO orderDTO) {
+    private boolean checkStockFromService(OrderDTO orderDTO) {
         Set<RequestStockValidationDTO> products = orderDTO.getProducts()
                 .stream()
                 .map(orderItemDTO -> new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity()))
                 .collect(Collectors.toSet());
         return productRestTemplate.postForEntity("/existStock", orderDTO.getProducts(), Boolean.class).getStatusCode() == HttpStatus.OK;
     }
-
-    private void reStock(OrderDTO orderDTO) {
-        Set<RequestStockValidationDTO> products = orderDTO.getProducts()
-                .stream()
-                .map(orderItemDTO -> new RequestStockValidationDTO(orderItemDTO.getProductId(), orderItemDTO.getQuantity()))
-                .collect(Collectors.toSet());
-        productRestTemplate.put("/updateStock", products, String.class);
-    }
-
 
     @Override
     public List<OrderDTO> getAllOrders() {
@@ -89,7 +91,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @RabbitListener(queues = "#{rabbitValues.updateOrderQueue}")
-    public void update(Long id) throws BadRequestException {
+    @Transactional
+    public void update(Long id) {
         Order orderFound = orderRepository
                 .findById(id)
                 .orElseThrow();
@@ -97,11 +100,12 @@ public class OrderServiceImpl implements OrderService {
         try {
             Order orderSaved = orderRepository.save(orderFound);
             rabbitTemplate.convertAndSend(rabbitValues.getExchange(), rabbitValues.getCreatedOrderRoutingKey(), orderMapper.entityToDTO(orderSaved));
-        } catch (Exception e) {
+        } catch (Exception exception) {
 //            TODO: realizar el restock en caso de que no se pueda realizar actualización.
 //            rabbitTemplate.convertAndSend(rabbitValues.getExchange(), rabbitValues.getUpdateStockRoutingKey(), orderMapper.entityToDTO(orderFound));
-            System.out.println("kjañsldkfañsl" + e.getMessage());
-            throw new BadRequestException(e.getMessage());
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            log.error(exception.getMessage(), exception);
+            throw exception;
         }
     }
 }
